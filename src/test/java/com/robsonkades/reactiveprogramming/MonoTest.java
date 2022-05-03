@@ -129,7 +129,6 @@ public class MonoTest {
 //                .verifyComplete();
     }
 
-
     @Test
     public void monoOnError() {
         Mono<Object> error = Mono.error(new IllegalArgumentException("On Error demo"))
