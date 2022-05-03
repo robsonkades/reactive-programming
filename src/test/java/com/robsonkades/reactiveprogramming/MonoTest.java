@@ -3,8 +3,11 @@ package com.robsonkades.reactiveprogramming;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import java.util.concurrent.Flow;
+
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.reactivestreams.Subscription;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,5 +64,44 @@ public class MonoTest {
         StepVerifier.create(mono)
                 .expectError(RuntimeException.class)
                 .verify();
+    }
+
+    @Test
+    public void monoSubscriberConsumerComplete() {
+        Mono<String> mono = Mono
+                .just("Hello Reactor")
+                .log()
+                .map(String::toUpperCase);
+
+        mono.subscribe(
+                s -> LOGGER.info("Consumer {}", s),
+                Throwable::printStackTrace,
+                () -> LOGGER.info("FINISHED!"));
+
+        LOGGER.info("---------------------");
+
+        StepVerifier.create(mono)
+                .expectNext("HELLO REACTOR")
+                .verifyComplete();
+    }
+
+    @Test
+    public void monoSubscriberConsumerSubscription() {
+        Mono<String> mono = Mono
+                .just("Hello Reactor")
+                .log()
+                .map(String::toUpperCase);
+
+        mono.subscribe(
+                s -> LOGGER.info("Consumer {}", s),
+                Throwable::printStackTrace,
+                () -> LOGGER.info("FINISHED!"),
+                Subscription::cancel);
+
+        LOGGER.info("---------------------");
+
+        StepVerifier.create(mono)
+                .expectNext("HELLO REACTOR")
+                .verifyComplete();
     }
 }
