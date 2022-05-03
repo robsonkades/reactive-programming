@@ -128,4 +128,44 @@ public class MonoTest {
 //                .expectNext("HELLO REACTOR")
 //                .verifyComplete();
     }
+
+
+    @Test
+    public void monoOnError() {
+        Mono<Object> error = Mono.error(new IllegalArgumentException("On Error demo"))
+                .doOnError(s -> LOGGER.info("OnError message {}", s.getMessage()))
+                .log();
+
+        StepVerifier.create(error)
+                .expectError(IllegalArgumentException.class)
+                .verify();
+
+    }
+
+    @Test
+    public void monoOnErrorOnResume() {
+        Mono<Object> error = Mono.error(new IllegalArgumentException("On Error demo"))
+                .doOnError(s -> LOGGER.info("OnError message {}", s.getMessage()))
+                .onErrorResume(s -> Mono.just("Fallback"))
+                .log();
+
+        StepVerifier.create(error)
+                .expectNext("Fallback")
+                .verifyComplete();
+
+    }
+
+    @Test
+    public void monoOnErrorOnReturn() {
+        Mono<Object> error = Mono.error(new IllegalArgumentException("On Error demo"))
+                .doOnError(s -> LOGGER.info("OnError message {}", s.getMessage()))
+                .onErrorReturn("EMPTY")
+                .onErrorResume(s -> Mono.just("Fallback"))
+                .log();
+
+        StepVerifier.create(error)
+                .expectNext("EMPTY")
+                .verifyComplete();
+
+    }
 }
