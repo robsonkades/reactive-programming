@@ -3,11 +3,7 @@ package com.robsonkades.reactiveprogramming;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
-import java.util.concurrent.Flow;
-
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.reactivestreams.Subscription;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -96,12 +92,40 @@ public class MonoTest {
                 s -> LOGGER.info("Consumer {}", s),
                 Throwable::printStackTrace,
                 () -> LOGGER.info("FINISHED!"),
-                Subscription::cancel);
+                subscription -> subscription.request(5));
 
         LOGGER.info("---------------------");
 
         StepVerifier.create(mono)
                 .expectNext("HELLO REACTOR")
                 .verifyComplete();
+    }
+
+    @Test
+    public void monoDoOnMethod() {
+        Mono<String> mono = Mono
+                .just("Hello Reactor")
+                .log()
+                .map(String::toUpperCase)
+                .doOnSubscribe(subscription -> LOGGER.info("subscribed"))
+                .doOnRequest(value -> LOGGER.info("Request {}", value))
+                .doOnNext(s -> LOGGER.info("OnNext {}", s))
+                .doOnNext(s -> LOGGER.info("OnNext {}", s))
+                .flatMap(s -> Mono.just("ABC"))
+                .doOnNext(s -> LOGGER.info("OnNext {}", s))
+                .doOnNext(s -> LOGGER.info("OnNext {}", s))
+                .doOnSuccess(s -> LOGGER.info("OnSuccess {}", s));
+
+        mono.subscribe(
+                s -> LOGGER.info("Consumer {}", s),
+                Throwable::printStackTrace,
+                () -> LOGGER.info("FINISHED!"),
+                subscription -> subscription.request(5));
+
+        LOGGER.info("---------------------");
+
+//        StepVerifier.create(mono)
+//                .expectNext("HELLO REACTOR")
+//                .verifyComplete();
     }
 }
