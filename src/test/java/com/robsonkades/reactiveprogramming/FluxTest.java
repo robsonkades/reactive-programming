@@ -216,6 +216,22 @@ public class FluxTest {
     }
 
     @Test
+    public void fluxSubscriberNumbersLimitRate() {
+        Flux<Integer> flux = Flux
+                .range(1, 10)
+                .log()
+                .limitRate(3);
+
+        flux.subscribe((e) -> LOGGER.info("Number {}", e));
+
+        StepVerifier
+                .create(flux)
+                .expectNext(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+                .verifyComplete();
+
+    }
+
+    @Test
     public void fluxSubscriberIntervalVirtualTime() throws InterruptedException {
 
         StepVerifier.withVirtualTime(() -> Flux
