@@ -8,6 +8,7 @@ import reactor.test.StepVerifier;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -159,4 +160,45 @@ public class OperatorTest {
                 })
                 .verifyComplete();
     }
+
+
+    @Test
+    public void switchIfEmpty() {
+        Flux<Object> flux = empty()
+                .switchIfEmpty(Flux.just("switchIfEmpty"))
+                .log();
+
+        StepVerifier.create(flux)
+                .expectSubscription()
+                .expectNext("switchIfEmpty")
+                .expectComplete()
+                .verify();
+    }
+
+    @Test
+    public void defer() throws InterruptedException {
+        //Mono<Long> mono = Mono.just(System.currentTimeMillis());
+        Mono<Long> mono = Mono.defer(() -> Mono.just(System.currentTimeMillis()));
+
+        mono.subscribe(s -> LOGGER.info("ERROR {}", s));
+        Thread.sleep(100);
+
+        mono.subscribe(s -> LOGGER.info("ERROR {}", s));
+        Thread.sleep(100);
+
+        mono.subscribe(s -> LOGGER.info("ERROR {}", s));
+        Thread.sleep(100);
+
+        mono.subscribe(s -> LOGGER.info("ERROR {}", s));
+        Thread.sleep(100);
+
+        AtomicLong atomicLong = new AtomicLong();
+        mono.subscribe(atomicLong::set);
+        Assertions.assertTrue(atomicLong.get() > 0);
+    }
+
+    public Flux<Object> empty() {
+        return Flux.empty();
+    }
+
 }
