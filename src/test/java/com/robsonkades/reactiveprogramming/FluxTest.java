@@ -98,11 +98,28 @@ public class FluxTest {
                     return i;
                 });
 
-        flux.subscribe(
-                e -> LOGGER.info("Number {}", e),
-                Throwable::printStackTrace,
-                () -> LOGGER.info("Completed"),
-                subscription -> subscription.request(3));
+        flux.subscribeWith(new BaseSubscriber<Integer>() {
+            @Override
+            protected void hookOnNext(Integer value) {
+                LOGGER.info("Number {}", value);
+            }
+
+
+            @Override
+            protected void hookOnError(Throwable throwable) {
+                throwable.printStackTrace();
+            }
+
+            @Override
+            protected void hookOnComplete() {
+                LOGGER.info("Completed");
+            }
+
+            @Override
+            protected void hookOnSubscribe(Subscription subscription) {
+                request(3);
+            }
+        });
 
         StepVerifier
                 .create(flux)
