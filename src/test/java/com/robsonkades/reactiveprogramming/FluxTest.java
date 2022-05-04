@@ -1,6 +1,7 @@
 package com.robsonkades.reactiveprogramming;
 
 import reactor.core.publisher.BaseSubscriber;
+import reactor.core.publisher.ConnectableFlux;
 import reactor.core.publisher.Flux;
 import reactor.test.StepVerifier;
 
@@ -245,5 +246,50 @@ public class FluxTest {
                 .expectNext(1L)
                 .thenCancel()
                 .verify();
+    }
+
+    @Test
+    public void connectableFlux() throws InterruptedException {
+
+        ConnectableFlux<Integer> publish = Flux
+                .range(1, 10)
+                .log()
+                .delayElements(Duration.ofMillis(100))
+                .publish();
+
+        publish.connect();
+
+        Thread.sleep(300);
+
+        publish.subscribe(i -> LOGGER.info("consumer 1 {}", i));
+
+        Thread.sleep(300);
+
+        publish.subscribe(i -> LOGGER.info("consumer 2 {}", i));
+
+    }
+
+    @Test
+    public void connectableFluxVerify() throws InterruptedException {
+
+        ConnectableFlux<Integer> publish = Flux
+                .range(1, 10)
+                .log()
+                .delayElements(Duration.ofMillis(100))
+                .publish();
+
+
+        StepVerifier
+                .create(publish)
+                .then(publish::connect)
+                .expectNext(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+                .verifyComplete();
+
+        StepVerifier
+                .create(publish)
+                .then(publish::connect)
+                .thenConsumeWhile(i -> i <= 5)
+                .expectNext(6, 7, 8, 9, 10)
+                .verifyComplete();
     }
 }
