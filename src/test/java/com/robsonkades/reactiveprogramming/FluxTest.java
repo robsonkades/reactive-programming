@@ -4,6 +4,7 @@ import reactor.core.publisher.BaseSubscriber;
 import reactor.core.publisher.Flux;
 import reactor.test.StepVerifier;
 
+import java.time.Duration;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
@@ -189,5 +190,44 @@ public class FluxTest {
                 .expectNext(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
                 .verifyComplete();
 
+    }
+
+    @Test
+    public void fluxSubscriberInterval() throws InterruptedException {
+        Flux<Long> flux = Flux
+                .interval(Duration.ofMillis(100))
+                .log();
+
+        flux.subscribe(e -> LOGGER.info("NUMBER {}", e));
+
+        Thread.sleep(1000);
+    }
+
+    @Test
+    public void fluxSubscriberIntervalTake() throws InterruptedException {
+        Flux<Long> flux = Flux
+                .interval(Duration.ofMillis(100))
+                .take(3)
+                .log();
+
+        flux.subscribe(e -> LOGGER.info("NUMBER {}", e));
+
+        Thread.sleep(1000);
+    }
+
+    @Test
+    public void fluxSubscriberIntervalVirtualTime() throws InterruptedException {
+
+        StepVerifier.withVirtualTime(() -> Flux
+                .interval(Duration.ofDays(1))
+                .log())
+                .expectSubscription()
+                .expectNoEvent(Duration.ofDays(1))
+                .thenAwait(Duration.ofDays(1))
+                .expectNext(0L)
+                .thenAwait(Duration.ofDays(1))
+                .expectNext(1L)
+                .thenCancel()
+                .verify();
     }
 }
