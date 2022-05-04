@@ -1,9 +1,15 @@
 package com.robsonkades.reactiveprogramming;
 
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.List;
+
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,7 +17,6 @@ import org.slf4j.LoggerFactory;
 public class OperatorTest {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(OperatorTest.class);
-
 
     @Test
     public void subscribeOn() {
@@ -58,7 +63,7 @@ public class OperatorTest {
     @Test
     public void multipleSubscribeOnSimple() {
         Flux<Integer> flux = Flux.range(1, 4)
-                .subscribeOn(Schedulers.boundedElastic())
+                .subscribeOn(Schedulers.single())
                 .map(i -> {
                     LOGGER.info("Map 1 - Number {} on Thread {}", i, Thread.currentThread().getName());
                     return i;
@@ -132,6 +137,26 @@ public class OperatorTest {
         StepVerifier.create(flux)
                 .expectSubscription()
                 .expectNext(1, 2, 3, 4)
+                .verifyComplete();
+    }
+
+    @Test
+    public void subscribeOnIO() throws InterruptedException {
+        Mono<List<String>> mono = Mono
+                .fromCallable(() -> Files.readAllLines(Path.of("demo-io.txt")))
+                .log()
+                .subscribeOn(Schedulers.boundedElastic());
+
+        mono.subscribe(s -> LOGGER.info("LINE {}", s));
+
+        Thread.sleep(2000);
+
+        StepVerifier.create(mono)
+                .expectSubscription()
+                .thenConsumeWhile(l -> {
+                    Assertions.assertFalse(l.isEmpty());
+                    return true;
+                })
                 .verifyComplete();
     }
 }
