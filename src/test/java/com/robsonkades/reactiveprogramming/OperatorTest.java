@@ -327,8 +327,8 @@ public class OperatorTest {
                     }
                     return i;
                 });
-        Flux<String> flux2 = Flux.just("a", "b", "x", "N");
 
+        Flux<String> flux2 = Flux.just("a", "b", "x", "N");
         Flux<String> concat = Flux
                 .mergeDelayError(1, flux1, flux2)
                 .log();
@@ -358,4 +358,40 @@ public class OperatorTest {
         return Flux.empty();
     }
 
+    @Test
+    public void flatMapOperator() {
+        // Bem parecido com o merge, não consegue garantir a order dos elementos
+        Flux<String> flux = Flux.just("a", "b");
+        Flux<String> map = flux.map(String::toUpperCase)
+                .flatMap(this::findByName)
+                .log();
+
+        StepVerifier.create(map)
+                .expectSubscription()
+                .expectNext("NAME_1B", "NAME_2B", "NAME_1A", "NAME_2A")
+                .expectComplete()
+                .verify();
+    }
+
+    @Test
+    public void flatMapSequencialOperator() {
+        // Bem parecido com o merge, não consegue garantir a order dos elementos
+        Flux<String> flux = Flux.just("a", "b");
+        Flux<String> map = flux.map(String::toUpperCase)
+                .flatMapSequential(this::findByName)
+                .log();
+
+        StepVerifier.create(map)
+                .expectSubscription()
+                .expectNext("NAME_1A", "NAME_2A", "NAME_1B", "NAME_2B")
+                .expectComplete()
+                .verify();
+    }
+
+    public Flux<String> findByName(String name) {
+        return name.equals("A") ? Flux
+                .just("NAME_1A", "NAME_2A")
+                .delayElements(Duration.ofMillis(100)) :
+                Flux.just("NAME_1B", "NAME_2B");
+    }
 }
