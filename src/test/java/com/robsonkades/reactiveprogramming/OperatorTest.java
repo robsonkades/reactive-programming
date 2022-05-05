@@ -263,6 +263,38 @@ public class OperatorTest {
                 .verify();
     }
 
+    @Test
+    public void mergeOperator() {
+        // Não espera terminar o primeiro flux para iniciar o proximo (rodando em threads paralelas)
+        Flux<String> flux1 = Flux.just("c", "d", "e", "f").delayElements(Duration.ofMillis(10));
+        Flux<String> flux2 = Flux.just("a", "b", "x", "N");
+
+        Flux<String> concat = Flux
+                .merge(flux1, flux2)
+                .log();
+
+        StepVerifier.create(concat)
+                .expectSubscription()
+                .expectNext("a", "b", "x", "N", "c", "d", "e", "f")
+                .expectComplete()
+                .verify();
+    }
+
+    @Test
+    public void mergeWithOperator() {
+        // Não espera terminar o primeiro flux para iniciar o proximo (rodando em threads paralelas)
+        Flux<String> flux1 = Flux.just("c", "d", "e", "f").delayElements(Duration.ofMillis(10));
+        Flux<String> flux2 = Flux.just("a", "b", "x", "N");
+
+        Flux<String> concat = flux1.mergeWith(flux2).log();
+
+        StepVerifier.create(concat)
+                .expectSubscription()
+                .expectNext("a", "b", "x", "N", "c", "d", "e", "f")
+                .expectComplete()
+                .verify();
+    }
+
     public Flux<Object> empty() {
         return Flux.empty();
     }
