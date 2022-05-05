@@ -231,6 +231,28 @@ public class OperatorTest {
     }
 
     @Test
+    public void concatOperatorError() {
+        Flux<String> flux1 = Flux.just("a", "b")
+                .map(i -> {
+                    if (i.equals("b")) {
+                        throw new IllegalArgumentException("Error");
+                    }
+                    return i;
+                });
+
+        Flux<String> flux2 = Flux.just("c", "d");
+        Flux<String> concat = Flux
+                .concatDelayError(flux1, flux2)
+                .log();
+
+        StepVerifier.create(concat)
+                .expectSubscription()
+                .expectNext("a", "c", "d")
+                .expectError()
+                .verify();
+    }
+
+    @Test
     public void combineLatestOperator() {
         Flux<String> flux1 = Flux.just("a", "b");
         Flux<String> flux2 = Flux.just("c", "d", "e", "f");
@@ -291,6 +313,43 @@ public class OperatorTest {
         StepVerifier.create(concat)
                 .expectSubscription()
                 .expectNext("a", "b", "x", "N", "c", "d", "e", "f")
+                .expectComplete()
+                .verify();
+    }
+
+    @Test
+    public void mergeOperatorError() {
+        // Não espera terminar o primeiro flux para iniciar o proximo (rodando em threads paralelas)
+        Flux<String> flux1 = Flux.just("c", "d", "e", "f")
+                .map(i -> {
+                    if (i.equals("e")) {
+                        throw new IllegalArgumentException(i);
+                    }
+                    return i;
+                });
+        Flux<String> flux2 = Flux.just("a", "b", "x", "N");
+
+        Flux<String> concat = Flux
+                .mergeDelayError(1, flux1, flux2)
+                .log();
+
+        StepVerifier.create(concat)
+                .expectSubscription()
+                .expectNext("c", "d", "a", "b", "x", "N")
+                .expectError()
+                .verify();
+    }
+
+    @Test
+    public void mergeSequencial() {
+        Flux<String> flux1 = Flux.just("c", "d").delayElements(Duration.ofMillis(10));
+        Flux<String> flux2 = Flux.just("a", "b");
+
+        Flux<String> concat = Flux.mergeSequential(flux1, flux2, flux1).log();
+
+        StepVerifier.create(concat)
+                .expectSubscription()
+                .expectNext("c", "d", "a", "b", "c", "d")
                 .expectComplete()
                 .verify();
     }
