@@ -1,8 +1,10 @@
 package com.robsonkades.reactiveprogramming;
 
+import reactor.blockhound.BlockHound;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -10,6 +12,11 @@ import org.slf4j.LoggerFactory;
 
 public class MonoTest {
     private static final Logger LOGGER = LoggerFactory.getLogger(MonoTest.class);
+
+    @BeforeAll
+    static void setUp() {
+        BlockHound.install();
+    }
 
     @Test
     public void monoSubscriber() {

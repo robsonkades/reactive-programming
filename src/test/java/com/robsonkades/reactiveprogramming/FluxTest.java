@@ -1,5 +1,6 @@
 package com.robsonkades.reactiveprogramming;
 
+import reactor.blockhound.BlockHound;
 import reactor.core.publisher.BaseSubscriber;
 import reactor.core.publisher.ConnectableFlux;
 import reactor.core.publisher.Flux;
@@ -8,6 +9,7 @@ import reactor.test.StepVerifier;
 import java.time.Duration;
 import java.util.List;
 
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -17,6 +19,12 @@ import org.slf4j.LoggerFactory;
 public class FluxTest {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FluxTest.class);
+
+    @BeforeAll
+    static void setUp() {
+        // Ignorar erros quando uma thread for bloqueada.
+        BlockHound.install(builder -> builder.allowBlockingCallsInside("java.lang.Thread", "sleep"));
+    }
 
     @Test
     public void fluxSubscriber() {

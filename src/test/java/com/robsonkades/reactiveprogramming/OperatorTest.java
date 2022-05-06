@@ -1,10 +1,10 @@
 package com.robsonkades.reactiveprogramming;
 
+import reactor.blockhound.BlockHound;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
-import reactor.util.function.Tuple3;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -14,6 +14,7 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,6 +22,26 @@ import org.slf4j.LoggerFactory;
 public class OperatorTest {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(OperatorTest.class);
+
+    @BeforeAll
+    static void setUp() {
+        BlockHound.install();
+    }
+
+    @Test
+    public void testBlockHound(){
+        Mono.delay(Duration.ofSeconds(1))
+                .publishOn(Schedulers.boundedElastic())
+                .doOnNext(it -> {
+                    try {
+                        Thread.sleep(10);
+                    }
+                    catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+                })
+                .block();
+    }
 
     @Test
     public void subscribeOn() {
