@@ -4,11 +4,13 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
+import reactor.util.function.Tuple3;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.jupiter.api.Assertions;
@@ -375,7 +377,7 @@ public class OperatorTest {
 
     @Test
     public void flatMapSequencialOperator() {
-        // Bem parecido com o merge, não consegue garantir a order dos elementos
+        // Bem parecido com o merge, consegue garantir a order dos elementos
         Flux<String> flux = Flux.just("a", "b");
         Flux<String> map = flux.map(String::toUpperCase)
                 .flatMapSequential(this::findByName)
@@ -393,5 +395,103 @@ public class OperatorTest {
                 .just("NAME_1A", "NAME_2A")
                 .delayElements(Duration.ofMillis(100)) :
                 Flux.just("NAME_1B", "NAME_2B");
+    }
+
+    @Test
+    public void zipOperator() {
+        Flux<String> modelFlux = Flux.just("Gol", "Uno", "Fit");
+        Flux<String> brandFlux = Flux.just("WV", "Fiat", "Honda");
+        Flux<Integer> yearFlux = Flux.just(2019, 2018, 2022);
+
+        Flux<Car> carFlux = Flux.zip(modelFlux, brandFlux, yearFlux)
+                .flatMap(i -> Mono.just(new Car(i.getT1(), i.getT2(), i.getT3())))
+                .log();
+
+        StepVerifier.create(carFlux)
+                .expectSubscription()
+                .expectNext(
+                        new Car("Gol", "WV", 2019),
+                        new Car("Uno", "Fiat", 2018),
+                        new Car("Fit", "Honda", 2022))
+                .expectComplete()
+                .verify();
+    }
+
+    @Test
+    public void zipWithOperator() {
+        // ZipWith so pode ter dois
+        Flux<String> modelFlux = Flux.just("Gol", "Uno", "Fit");
+        Flux<String> brandFlux = Flux.just("WV", "Fiat", "Honda");
+        //Flux<Integer> yearFlux = Flux.just(2019, 2018, 2022);
+        Flux<Car> carFlux = modelFlux
+                .zipWith(brandFlux)
+                .flatMap(i -> Mono.just(new Car(i.getT1(), i.getT2(), 0)))
+                .log();
+
+        StepVerifier.create(carFlux)
+                .expectSubscription()
+                .expectNext(
+                        new Car("Gol", "WV", 0),
+                        new Car("Uno", "Fiat", 0),
+                        new Car("Fit", "Honda", 0))
+                .expectComplete()
+                .verify();
+    }
+
+
+    static class Car {
+        private String model;
+        private String brand;
+        private int year;
+
+        public Car(String model, String brand, int year) {
+            this.model = model;
+            this.brand = brand;
+            this.year = year;
+        }
+
+        public String getModel() {
+            return model;
+        }
+
+        public void setModel(String model) {
+            this.model = model;
+        }
+
+        public String getBrand() {
+            return brand;
+        }
+
+        public void setBrand(String brand) {
+            this.brand = brand;
+        }
+
+        public int getYear() {
+            return year;
+        }
+
+        public void setYear(int year) {
+            this.year = year;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            Car car = (Car) o;
+
+            if (year != car.year) return false;
+            if (!Objects.equals(model, car.model)) return false;
+            return Objects.equals(brand, car.brand);
+        }
+
+        @Override
+        public int hashCode() {
+            int result = model != null ? model.hashCode() : 0;
+            result = 31 * result + (brand != null ? brand.hashCode() : 0);
+            result = 31 * result + year;
+            return result;
+        }
     }
 }
