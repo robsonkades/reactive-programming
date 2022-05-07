@@ -4,6 +4,8 @@ import reactor.blockhound.BlockHound;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import java.time.Duration;
+
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -173,5 +175,26 @@ public class MonoTest {
                 .expectNext("EMPTY")
                 .verifyComplete();
 
+    }
+
+    @Test
+    public void monoWithCache () throws InterruptedException {
+        Mono<Integer> mono = Mono
+                .just(1)
+                .map(i -> {
+                    LOGGER.info("Step: 1 - without cache");
+                    return i + 1;
+                })
+                .map(i -> {
+                    LOGGER.info("Step: 2 - without cache");
+                    return i + 1;
+                })
+                .cache(Duration.ofMillis(100))
+                .log();
+        StepVerifier.create(mono)
+                .expectSubscription()
+                .expectNext(3)
+                .expectComplete()
+                .verify();
     }
 }
